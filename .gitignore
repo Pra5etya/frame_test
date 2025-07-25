@@ -1,0 +1,20 @@
+# Env
+my_env
+
+# Dir
+app/__pycache__
+app/models/__pycache__
+app/routes/__pycache__
+
+config/__pycache__
+
+scheduler/__pycache__
+
+logs
+
+instance
+
+# File
+*.pyc
+*.enc
+secret.key
