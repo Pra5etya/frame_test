@@ -10,8 +10,11 @@ usahakan dalam pembuatan config dalam web urutannya yakni sebagai berikut:
 6. notifikasi
 
 # crypto section
-* penerapan enkripsi environemnt dijalankan ketika ada perubahana di dalam setiap .env.* dimana terdapat modifikasi jika pada terminal:
+* untuk secret key sebaiknya membuat script baru untuk generate keynya, misal **generate_key.py** namun hasil enkripsi disimpan pada masing" variabel .env-nya
+* dalam melakukan enkripsi .env-nya usahakan per .env, misal (.env.dev.enc, dsb), dan untuk secret keynya disimpan dalam variabel .env-nya
+
 ```bash
 py encrypt_env.py stag || py encrypt_env.py pro 
 ```
-maka akan membuat enrkipsi di dalam variabel .env setiap masing" environmentnya dengan default untuk menajalankan script di atas tanpa stag atau pro dia akan menjalankan environemnt untuk development
+
+* jika sudah maka tinggal buat file decrypt-nya di direktori config, lalu di implementasikan ke dalamm app utama

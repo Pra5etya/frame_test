@@ -47,14 +47,15 @@ def load_env_files():
         raise ValueError(f"Invalid environment '{def_env}' resolved to '{resolved_env}'. Allowed: {valid_envs}")
 
     os.environ["FLASK_ENV"] = resolved_env
-    return resolved_env.lower()
+    
+    return resolved_env.lower(), env_file
 
 def register_config():
     """
     Mendaftarkan dan mengembalikan konfigurasi berdasarkan environment hasil dari load_env_files.
     """
 
-    env = load_env_files()
+    env, env_file = load_env_files()
     logger = setup_logger()
 
     from config.set_env import (
@@ -80,5 +81,8 @@ def register_config():
     logger.info('=' * 30)
     logger.info(f'Use {env} configuration')
     logger.info('=' * 30)
+
+    print(f'Loaded .env file: {env_file}')
+    logger.info(f'Loaded .env file: {env_file}')
 
     return selected_config
