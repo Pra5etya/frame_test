@@ -10,6 +10,8 @@ config/__pycache__
 
 scheduler/__pycache__
 
+script/__pycache__
+
 logs
 
 instance

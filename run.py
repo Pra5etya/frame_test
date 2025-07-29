@@ -39,6 +39,8 @@ if __name__ == "__main__":
 
         # SECRET KEY
         'SECRET_KEY', 
+        'JWT_KEY', 
+        'CSRF_KEY', 
 
         # DATABASE
         'DB_ENGINE', 
@@ -59,5 +61,7 @@ if __name__ == "__main__":
             print(f"{key} = {value}")
 
     print(f'\n')
+
+    
 
     app.run(debug = True)

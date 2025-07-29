@@ -3,9 +3,6 @@ from config.data import get_database_uri
 
 
 class BaseConfig:
-    """
-    Base configuration untuk semua environment.
-    """
     SECRET_KEY = os.getenv("SECRET_KEY")
 
     # SQLALCHEMY_DATABASE_URI = get_database_uri()
