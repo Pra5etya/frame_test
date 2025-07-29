@@ -1,9 +1,10 @@
-from dotenv import load_dotenv
 from config.env_set import (
     DevelopmentConfig,
     StagingConfig,
     ProductionConfig
 )
+from script.generate_key import update_env_file
+from dotenv import load_dotenv
 
 import os, sys
 
@@ -40,6 +41,9 @@ def get_env_settings():
     return env_dir, valid_envs
 
 def load_target_env_file(env_dir, resolved_env):
+    # Tambahkan pemanggilan untuk memastikan key dibuat (jika belum ada)
+    update_env_file(resolved_env, env_dir)
+
     env_file_path = os.path.join(env_dir, f".env.{resolved_env}")
 
     if not os.path.exists(env_file_path):
@@ -48,6 +52,7 @@ def load_target_env_file(env_dir, resolved_env):
     load_dotenv(dotenv_path=env_file_path, override=True)
 
     return env_file_path
+
 
 def validate_env(resolved_env, valid_envs, original_env):
     if resolved_env not in valid_envs:
