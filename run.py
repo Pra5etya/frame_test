@@ -7,9 +7,6 @@ app = create_app()
 # load_encrypted_env(ENV)
 
 if __name__ == "__main__":
-    # print(f'Start Application: {os.environ["FLASK_ENV"]} \n')     # Hanya untuk testing, jika sudah hapus kembali !!!
-    # time.sleep(3)                                                 # Hanya untuk testing, jika sudah hapus kembali !!!
-
     # # cek semua nilai environ per-baris
     # for key, value in os.environ.items():
     #     if 'SECRET' in key.upper() or 'SECRET' in value.upper():
@@ -41,6 +38,7 @@ if __name__ == "__main__":
         'SECRET_KEY', 
         'JWT_KEY', 
         'CSRF_KEY', 
+        'SECRET_PROVIDER', 
 
         # DATABASE
         'DB_ENGINE', 
@@ -53,15 +51,20 @@ if __name__ == "__main__":
         'DB_PATH', 
     }
 
-    print(f'\n')
+    # print(f'\n')
 
-    for key in flask_env_keys:
-        value = os.environ.get(key)
-        if value is not None:
-            print(f"{key} = {value}")
+    # for key in flask_env_keys:
+    #     value = os.environ.get(key)
+    #     if value is not None:
+    #         print(f"{key} = {value}")
 
-    print(f'\n')
+    # print(f'\n')
 
-    
+    # Testing Environment Key Value
+    from script.manage_key import print_master_key
+
+    # print_master_key("development") # kunci dibuat ketika .masterkey tidak ada filenya
+    # print_master_key("staging") # kunci dibuat ketika runtime di jalankan (setiap kali run aplikasi) dan tidak disimpan pada .env.stag
+    print_master_key("production")  # kunci untuk production dimana disimpan terpisah di luar aplikasi utama atau root project
 
     app.run(debug = True)

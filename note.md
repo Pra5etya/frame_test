@@ -21,3 +21,6 @@ py encrypt_env.py stag || py encrypt_env.py pro
 * jika sudah maka tinggal buat file decrypt-nya di direktori config, lalu di implementasikan ke dalamm app utama
 
 * note: jangan sampai file permission longgar pada hosting
+
+* file .masterkey sebaiknya dimasukan ke dalam instance dan hanya digunakan pada **environment development** dan hanya di generate sekali saja jadi sebaiknya tidak di generate terus menerus
+* penggunaan APP_MASTER_KEY hanya diterapkan pada runtimen namun masih bisa dilihat menggunakan os.getenv namun tidak disimpan ke dalam .env stag
