@@ -27,12 +27,27 @@ def load_root_env():
     load_dotenv(dotenv_path=root_env_path, override=False)
 
 def resolve_env_name():
-    def_env = os.getenv("DEFAULT_ENV")
+    # Ambil default dari .env atau kosong
+    def_env = os.getenv("DEFAULT_ENV", "").lower()
+    provider = os.getenv("SECRET_PROVIDER", "").lower()
 
+    # Override kalau dari CLI ada
     if len(sys.argv) > 1:
         def_env = sys.argv[1]
 
-    return ENV_ALIAS_MAP.get(def_env, def_env), def_env  # return (mapped, original)
+    if len(sys.argv) > 2:
+        provider = sys.argv[2].lower()
+
+    # Validasi minimal
+    if not def_env:
+        raise ValueError("Environment name tidak ditemukan. Gunakan argumen CLI atau isi DEFAULT_ENV.")
+
+    if ENV_ALIAS_MAP.get(def_env, def_env) == "production" and not provider:
+        raise ValueError("Provider harus ditentukan di production. Gunakan: py run.py pro gcp")
+
+    # Return mapped_env, raw_env, provider
+    return ENV_ALIAS_MAP.get(def_env, def_env), def_env, provider
+
 
 def get_env_settings():
     env_dir = os.getenv("ENV_DIR")
@@ -66,12 +81,16 @@ def load_env_files():
 
     env_dir, valid_envs = get_env_settings()
     
-    resolved_env, original_env = resolve_env_name()
+    resolved_env, original_env, provider = resolve_env_name()
+
+    print(f"Resolved env: {original_env} → Using .env.{resolved_env}")
+    print(f"Provider: {provider}")
     
     env_file = load_target_env_file(env_dir, resolved_env)
     
     validate_env(resolved_env, valid_envs, original_env)
     
     os.environ["FLASK_ENV"] = resolved_env
-    
+    os.environ["SECRET_PROVIDER"] = provider  # ← Set global provider
+
     return resolved_env.lower(), env_file

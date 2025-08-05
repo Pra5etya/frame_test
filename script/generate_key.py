@@ -26,8 +26,10 @@ def resolve_env_path(env_input: str, env_dir: str):
 def initialize_master_key(env_name: str):
     if env_name == "development":
         write_dev_master_key()
+
     elif env_name == "staging":
         set_staging_master_key()
+        
     elif env_name == "production":
         # Tambahan khusus jika butuh setup awal untuk production
         print("[INFO] Inisialisasi untuk environment production dilakukan.")

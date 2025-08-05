@@ -60,11 +60,4 @@ if __name__ == "__main__":
 
     # print(f'\n')
 
-    # Testing Environment Key Value
-    from script.manage_key import print_master_key
-
-    # print_master_key("development") # kunci dibuat ketika .masterkey tidak ada filenya
-    # print_master_key("staging") # kunci dibuat ketika runtime di jalankan (setiap kali run aplikasi) dan tidak disimpan pada .env.stag
-    print_master_key("production")  # kunci untuk production dimana disimpan terpisah di luar aplikasi utama atau root project
-
     app.run(debug = True)

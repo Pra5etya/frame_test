@@ -19,9 +19,14 @@ DEV_KEY = f"{INST_DIR}/{LOCAL_KEY}"
 
 
 def encrypt_value(value: str, key: bytes) -> str:
-    f = Fernet(key)
-    token = f.encrypt(value.encode()).decode()
-    return f"ENC({token})"
+    if key is None:
+        raise ValueError("Encryption key is None. Make sure the key is loaded properly.")
+
+    else: 
+        f = Fernet(key)
+        token = f.encrypt(value.encode()).decode()
+        return f"ENC({token})"
+
 
 def load_master_key(env: str) -> bytes:
     if env == "development":
@@ -35,7 +40,7 @@ def load_master_key(env: str) -> bytes:
 
         if provider == "gcp":
             print(f'Nama enkripsi provider yang digunakan: {provider}')
-            # return load_gcp_secret_key()
+            return load_gcp_secret_key()
         
         elif provider == "aws":
             print(f'Nama enkripsi provider yang digunakan: {provider}')
@@ -53,6 +58,7 @@ def load_dev_key() -> bytes:
 
 def load_staging_key() -> bytes:
     return os.environ["APP_MASTER_KEY"].encode()
+    
 
 def load_gcp_secret_key() -> bytes:
     # must install pip install google-cloud-secret-manager
@@ -62,10 +68,24 @@ def load_gcp_secret_key() -> bytes:
     secret_id = os.getenv("GCP_SECRET_ID")
     version_id = os.getenv("GCP_SECRET_VERSION", "latest")
 
+    if not all([project_id, secret_id]):
+        raise EnvironmentError("GCP_PROJECT_ID dan GCP_SECRET_ID harus diset di environment.")
+
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data
+    
+    try:
+        response = client.access_secret_version(request={"name": name})
+        secret_data = response.payload.data  # type: bytes
+
+    except Exception as e:
+        raise RuntimeError(f"Gagal mengakses secret dari GCP: {e}")
+
+    if not secret_data:
+        raise ValueError("Key tidak berhasil dimuat. Secret kosong atau tidak valid.")
+
+    return secret_data
+
 
 def load_aws_secret_key() -> bytes:
     import boto3
@@ -74,10 +94,29 @@ def load_aws_secret_key() -> bytes:
     secret_name = os.getenv("AWS_SECRET_NAME")
     region_name = os.getenv("AWS_REGION")
 
+    if not all([secret_name, region_name]):
+        raise EnvironmentError("AWS_SECRET_NAME dan AWS_REGION harus diset di environment.")
+
     client = boto3.client('secretsmanager', region_name=region_name)
 
     try:
-        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
-        return get_secret_value_response['SecretString'].encode()
+        response = client.get_secret_value(SecretId=secret_name)
+
+        # Secret bisa berada di SecretString atau SecretBinary
+        if 'SecretString' in response:
+            secret_data = response['SecretString'].encode()
+
+        elif 'SecretBinary' in response:
+            secret_data = response['SecretBinary']
+            
+        else:
+            raise ValueError("Secret tidak ditemukan dalam SecretString maupun SecretBinary.")
+
+        if not secret_data:
+            raise ValueError("Secret kosong. Pastikan secret AWS berisi data yang valid.")
+
+        return secret_data
+
     except ClientError as e:
-        raise RuntimeError(f"AWS Secret fetch failed: {e}")
+        raise RuntimeError(f"Gagal mengambil secret dari AWS Secrets Manager: {e}")
+

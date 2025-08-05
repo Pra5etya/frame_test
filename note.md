@@ -24,3 +24,6 @@ py encrypt_env.py stag || py encrypt_env.py pro
 
 * file .masterkey sebaiknya dimasukan ke dalam instance dan hanya digunakan pada **environment development** dan hanya di generate sekali saja jadi sebaiknya tidak di generate terus menerus
 * penggunaan APP_MASTER_KEY hanya diterapkan pada runtimen namun masih bisa dilihat menggunakan os.getenv namun tidak disimpan ke dalam .env stag
+
+# NEXT
+1. menerapkan secret manager menggunakan GCP
