@@ -10,12 +10,6 @@ def setup_logger():
     try:
         # Membuat direktori logs jika belum ada
         os.makedirs(log_dir, exist_ok = True)
-        
-        if os.path.exists(log_dir):
-            print(f"Direktori '{log_dir}' berhasil dibuat atau sudah ada.")
-        
-        else:
-            print(f"Direktori '{log_dir}' tidak berhasil dibuat.")
     
     except Exception as e:
         print(f"Gagal membuat direktori '{log_dir}': {e}")

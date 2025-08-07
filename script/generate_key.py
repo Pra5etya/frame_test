@@ -1,96 +1,231 @@
-import os
-import secrets
+from cryptography.fernet import Fernet, InvalidToken
 from dotenv import load_dotenv
-from script.encrypt import encrypt_value, load_master_key
-from script.manage_key import write_dev_master_key, set_staging_master_key
 
-TARGET_KEYS = ["SECRET_KEY", "JWT_KEY", "CSRF_KEY"]
+import os, time, json
 
-ALIASES = {
-    "development": ["dev", "development"],
-    "staging": ["stag", "staging"],
-    "production": ["pro", "prod", "production"]
-}
+# ==========================
+# ENVIRONMENT LOADER
+# ==========================
 
-ENV_ALIASES = {alias: f".env.{env}" for env, aliases in ALIASES.items() for alias in aliases}
+def load_environment():
+    """
+    Load environment variables dari .env utama dan .env.<env>
+    """
+    # Step 1.1: Load .env utama
+    load_dotenv()
 
-def generate_value():
-    return secrets.token_hex(32)
+    # Step 1.2: Dapatkan env dan direktori
+    FLASK_ENV = os.getenv("FLASK_ENV", "")
+    ENV_DIR = os.getenv("ENV_DIR", "")
 
-def resolve_env_path(env_input: str, env_dir: str):
-    resolved_env = ENV_ALIASES.get(env_input, f".env.{env_input}")
-    env_path = os.path.join(env_dir, resolved_env)
-    env_name = resolved_env.replace(".env.", "")
-    return env_name, env_path
+    # Step 1.3: Load .env.<env> dengan override (PINDAHKAN KE SINI)
+    if FLASK_ENV:
+        load_dotenv(f"{ENV_DIR}/.env.{FLASK_ENV}", override=True)
 
-def initialize_master_key(env_name: str):
-    if env_name == "development":
-        write_dev_master_key()
+    # Step 1.4: Baru ambil variable yang dibutuhkan
+    INST_DIR = os.getenv("INST_DIR") 
+    LOCAL_KEY = os.getenv("LOCAL_KEY")
+    DEV_KEY = f"{INST_DIR}/{LOCAL_KEY}" if INST_DIR and LOCAL_KEY else None
+    CURRENT_USER = os.getenv("CURRENT_USER")
 
-    elif env_name == "staging":
-        set_staging_master_key()
-        
-    elif env_name == "production":
-        # Tambahan khusus jika butuh setup awal untuk production
-        print("[INFO] Inisialisasi untuk environment production dilakukan.")
-    else:
-        raise ValueError(f"[ERROR] Environment tidak dikenali: {env_name}")
+    return DEV_KEY, INST_DIR, CURRENT_USER
 
-def load_env_and_master_key(env_path: str, env_name: str):
-    if os.path.exists(env_path):
-        load_dotenv(env_path, override=True)
-    else:
-        print(f"[INFO] File {env_path} belum ada, akan dibuat.")
-    return load_master_key(env_name)
 
-def read_env_file(env_path: str):
-    if os.path.exists(env_path):
-        with open(env_path, "r") as f:
-            return f.readlines()
-    return []
+# ==========================
+# MASTER KEY GENERATOR
+# ==========================
 
-def update_or_generate_keys(lines, key: bytes):
-    new_lines = []
-    found_keys = {k: False for k in TARGET_KEYS}
+def generate_master_key():
+    """
+    Generate kunci Fernet baru
+    """
+    return Fernet.generate_key()
 
-    for line in lines:
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or "=" not in stripped:
-            new_lines.append(line)
-            continue
 
-        key_name, _, _ = line.partition("=")
-        key_name = key_name.strip()
+# ==========================
+# DEV KEY MANAGEMENT (.masterkey file)
+# ==========================
 
-        if key_name in TARGET_KEYS:
-            encrypted_val = encrypt_value(generate_value(), key)
-            new_lines.append(f"{key_name}={encrypted_val}\n")
-            found_keys[key_name] = True
-        else:
-            new_lines.append(line)
+def dev_key():
+    """
+    Membuat file .masterkey lokal jika belum ada
+    """
+    DEV_KEY, _, _ = load_environment()
 
-    # Tambahkan key yang belum ada
-    for k, found in found_keys.items():
-        if not found:
-            encrypted_val = encrypt_value(generate_value(), key)
-            new_lines.append(f"{k}={encrypted_val}\n")
+    if os.path.exists(DEV_KEY):
+        print(f"\n[✓] .masterkey sudah ada → {DEV_KEY}")
+        return
 
-    return new_lines
+    key = generate_master_key()
 
-def write_env_file(env_path: str, new_lines):
-    os.makedirs(os.path.dirname(env_path), exist_ok=True)
-    with open(env_path, "w") as f:
-        f.writelines(new_lines)
-    print(f"[✓] File berhasil diperbarui → {env_path}")
+    with open(DEV_KEY, "wb") as f:
+        f.write(key)
 
-def update_env_file(env_input: str, env_dir: str):
-    env_name, env_path = resolve_env_path(env_input, env_dir)
+    print(f"\n[✓] .masterkey berhasil dibuat → {DEV_KEY}")
 
-    # Inisialisasi key & env vars sesuai env
-    initialize_master_key(env_name)
-    key = load_env_and_master_key(env_path, env_name)
+def check_dev_key():
+    """
+    Mengecek apakah .masterkey valid dan bisa digunakan
+    """
+    DEV_KEY, _, _ = load_environment()
 
-    # Proses pembaruan .env
-    lines = read_env_file(env_path)
-    new_lines = update_or_generate_keys(lines, key)
-    write_env_file(env_path, new_lines)
+    if not DEV_KEY or not os.path.exists(DEV_KEY):
+        print(f"\n[!] .masterkey belum tersedia → {DEV_KEY}")
+        return
+
+    try:
+        with open(DEV_KEY, "rb") as f:
+            key = f.read()
+            Fernet(key)  # validasi apakah key benar
+
+        print(f"\n[✓] .masterkey valid → {DEV_KEY}")
+
+    except Exception as e:
+        print(f"\n[✗] .masterkey korup atau tidak valid → {DEV_KEY}")
+        print(f"[Error] {e}")
+
+# ==========================
+# STAGING KEY MANAGEMENT (env var runtime only)
+# ==========================
+
+def stag_key():
+    """
+    Set APP_MASTER_KEY di environment runtime jika belum ada
+    """
+    if os.getenv("APP_MASTER_KEY"):
+        print("\n[✓] APP_MASTER_KEY sudah tersedia di environment.")
+        return
+
+    key = generate_master_key()
+    os.environ["APP_MASTER_KEY"] = key.decode()
+
+    print("\n[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+
+
+def check_stag_key():
+    """
+    Mengecek apakah APP_MASTER_KEY valid dan bisa digunakan.
+    Jika tidak ada, akan dibuat baru melalui stag_key().
+    """
+    key = os.getenv("APP_MASTER_KEY")
+
+    if not key:
+        print(f"\n[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+        stag_key()
+        return  # stop setelah generate key baru
+
+    try:
+        Fernet(key.encode())  # validasi format key
+        print("\n[✓] APP_MASTER_KEY valid di environment.")
+
+    except Exception as e:
+        print("\n[✗] APP_MASTER_KEY korup atau tidak valid.")
+        print(f"[Error] {e}")
+
+# ==========================
+# PRODUCTION KEY MANAGEMENT (env var runtime only)
+# ==========================
+
+def get_current_user():
+    # IAM: User ID simulasi dari environment atau sesi login
+    _, _, CURRENT_USER = load_environment()
+
+    return CURRENT_USER or "guest"
+
+def prod_key(force_rotate = False):
+    """
+    Set APP_MASTER_KEY di environment runtime jika belum ada, atau jika rotasi dipaksa.
+    """
+    _, DIR_INST, _ = load_environment()
+
+    KEY_FILE = os.path.join(DIR_INST, "prod_master.key")
+    EXPIRATION_SECONDS = 600  # 10 menit
+    ALLOWED_USERS = ["admin", "superuser"]  # IAM simulasi
+
+    # IAM check
+    user = get_current_user()
+
+    if user not in ALLOWED_USERS:
+        print(f"\n[✗] Akses ditolak untuk user '{user}'. Hanya admin dapat membuat key.")
+
+        return
+
+    # Rotasi otomatis berdasarkan waktu
+    if KEY_FILE.exists() and not force_rotate:
+        try:
+            with open(KEY_FILE, "r") as f:
+                data = json.load(f)
+                created_at = data.get("created_at", 0)
+
+                if time.time() - created_at < EXPIRATION_SECONDS:
+                    os.environ["APP_MASTER_KEY"] = data["key"]
+                    print("\n[✓] APP_MASTER_KEY aktif dan masih valid.")
+
+                    return
+        except Exception as e:
+            print(f"[!] Gagal membaca key file: {e}")
+
+    # Generate baru
+    key = generate_master_key().decode()
+    os.environ["APP_MASTER_KEY"] = key
+
+    # Simpan ke file terenkripsi (sementara dalam bentuk plaintext + waktu)
+    KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(KEY_FILE, "w") as f:
+        json.dump({"key": key, "created_at": time.time()}, f)
+
+    print("\n[✓] APP_MASTER_KEY berhasil dibuat dan disimpan ke instance/.")
+
+
+def check_prod_key():
+    """
+    Mengecek apakah APP_MASTER_KEY valid dan bisa digunakan.
+    Jika tidak ada atau sudah expired, akan dibuat baru.
+    """
+    _, DIR_INST, _ = load_environment()
+
+    KEY_FILE = os.path.join(DIR_INST, "prod_master.key")
+    EXPIRATION_SECONDS = 600  # 10 menit
+
+    key = os.getenv("APP_MASTER_KEY")
+
+    if not key:
+        print(f"\n[INFO] APP_MASTER_KEY tidak ditemukan di runtime, mencoba ambil dari instance...")
+        try:
+            with open(KEY_FILE, "r") as f:
+                data = json.load(f)
+                key = data["key"]
+                created_at = data.get("created_at", 0)
+
+                if time.time() - created_at > EXPIRATION_SECONDS:
+                    print("[INFO] APP_MASTER_KEY kadaluarsa, membuat baru...")
+                    prod_key(force_rotate=True)
+
+                    return
+
+                os.environ["APP_MASTER_KEY"] = key
+                print("\n[✓] APP_MASTER_KEY berhasil di-set dari file instance.")
+
+        except FileNotFoundError:
+            print("[INFO] File key tidak ditemukan, membuat baru...")
+            prod_key()
+
+        except Exception as e:
+            print("[✗] Gagal membaca key dari file.")
+            print(f"[Error] {e}")
+            prod_key()
+
+        return
+
+    # Validasi format key
+    try:
+        Fernet(key.encode())
+        print("\n[✓] APP_MASTER_KEY valid di environment.")
+
+    except InvalidToken:
+        print("\n[✗] APP_MASTER_KEY tidak valid, merotasi...")
+        prod_key(force_rotate=True)
+
+    except Exception as e:
+        print(f"\n[✗] APP_MASTER_KEY error.\n[Error] {e}")
+        prod_key(force_rotate=True)

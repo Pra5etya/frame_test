@@ -1,7 +1,7 @@
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 import os
-from script.manage_key import ensure_staging_master_key
+from script.generate_key import check_stag_key
 
 # Step 1: Load .env utama
 load_dotenv()
@@ -32,7 +32,7 @@ def get_decryption_key(env: str) -> bytes:
         return _load_dev_key()
     
     elif env == "staging":
-        ensure_staging_master_key()
+        check_stag_key()
         return os.environ["APP_MASTER_KEY"].encode()
     
     elif env == "production":

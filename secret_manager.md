@@ -1,4 +1,6 @@
-# 🔐 Langkah 1: Buat Service Account Key
+# VENDOR SECRET MANAGER
+
+## 🔐 Langkah 1: Buat Service Account Key
 1. Buka Google Cloud Console - IAM & Admin > Service Accounts
 2. Pilih project GCP kamu.
 3. Klik "Create Service Account"
@@ -11,13 +13,13 @@
 7. Klik "Add Key" > "Create new key" > JSON
 8. Simpan file .json ke lokasi aman (misalnya: credentials/gcp-key.json)
 
-# ⚙️ Langkah 2: Atur Environment Variable
+## ⚙️ Langkah 2: Atur Environment Variable
 ```bash
 # untuk secret manager
 pip install google-cloud-secret-manager
 ```
 
-## Opsi A – Sementara (via terminal)
+### Opsi A – Sementara (via terminal)
 ```bash
 # Windows
 set GOOGLE_APPLICATION_CREDENTIALS=D:\GIT Data\frame_test\credentials\gcp-key.json
@@ -26,7 +28,7 @@ set GOOGLE_APPLICATION_CREDENTIALS=D:\GIT Data\frame_test\credentials\gcp-key.js
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/gcp-key.json
 ```
 
-## Opsi B – Permanen (via .env)
+### Opsi B – Permanen (via .env)
 ```env
 GOOGLE_APPLICATION_CREDENTIALS=D:/GIT Data/frame_test/credentials/gcp-key.json
 GCP_PROJECT_ID=your-project-id
@@ -39,7 +41,7 @@ from dotenv import load_dotenv
 load_dotenv()
 ```
 
-# 🧪 Contoh Fungsi load_gcp_secret_key
+## 🧪 Contoh Fungsi load_gcp_secret_key
 ```python
 import os
 from google.cloud import secretmanager
@@ -64,6 +66,24 @@ def load_gcp_secret_key() -> bytes:
     return response.payload.data
 ```
 
-# 📚 Referensi
+## 📚 Referensi
 * [Google Cloud Secret Manager Python Client](https://cloud.google.com/secret-manager/docs/reference/libraries)
 * [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc#how-to)
+
+# BUAT SENDIRI
+
+| Fitur Secret Manager      | Bisa Dibuat Sendiri?  | Cara Implementasi                                              |
+| ------------------------- | --------------------- | -------------------------------------------------------------- |
+| 🔐 Enkripsi nilai secret  | ✅ Bisa                | Gunakan `cryptography.Fernet`, `AES-GCM`, atau `NaCl`          |
+| 🧾 Versi secret           | ✅ Bisa manual         | Gunakan struktur folder + penamaan: `SECRET_NAME_v1.json`      |
+| 🕓 Rotasi otomatis        | 🔶 Bisa semi-otomatis | Jadwalkan dengan cron job + CLI internal                       |
+| 👥 Kontrol akses (IAM)    | 🔶 Bisa terbatas      | Buat user access rules berbasis per-folder atau file           |
+| 📜 Audit log              | 🔶 Bisa manual        | Log akses secret ke file `access.log` secara programatik       |
+| 🔁 Auto-load saat runtime | ✅ Bisa                | Tambahkan ke `create_app()` seperti yang sudah kamu lakukan    |
+| ☁️ Penyimpanan cloud      | ✅ Bisa optional       | Gunakan GCS, S3, atau private Git repo bila mau remote storage |
+
+## Hal yang harus di implementasi:
+* Enkripsi nilai secret
+* Rotasi otomatis (dalam beberapa menit)
+* Kontrol akses (IAM)
+* Penyimpanan ke luar atau ke folder instance
