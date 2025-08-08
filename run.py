@@ -16,40 +16,40 @@ if __name__ == "__main__":
     #         print(f"{key} = {value}")
 
 
-    # Daftar environment penting yang biasa digunakan dalam proyek Flask
-    flask_env_keys = {
-        # default flask
-        'DEFAULT_ENV', 
-        'DEFAULT_HOST', 
-        'DEFAULT_PORT', 
+    # # Daftar environment penting yang biasa digunakan dalam proyek Flask
+    # flask_env_keys = {
+    #     # default flask
+    #     'DEFAULT_ENV', 
+    #     'DEFAULT_HOST', 
+    #     'DEFAULT_PORT', 
 
-        # directory
-        'INST_DIR', 
-        'ENV_DIR', 
+    #     # directory
+    #     'INST_DIR', 
+    #     'ENV_DIR', 
 
-        # environment
-        'VALID_ENVS', 
+    #     # environment
+    #     'VALID_ENVS', 
 
-        # ENVIRONMENT
-        'FLASK_ENV', 
-        'DEBUG', 
+    #     # ENVIRONMENT
+    #     'FLASK_ENV', 
+    #     'DEBUG', 
 
-        # SECRET KEY
-        'SECRET_KEY', 
-        'JWT_KEY', 
-        'CSRF_KEY', 
-        'SECRET_PROVIDER', 
+    #     # SECRET KEY
+    #     'SECRET_KEY', 
+    #     'JWT_KEY', 
+    #     'CSRF_KEY', 
+    #     'SECRET_PROVIDER', 
 
-        # DATABASE
-        'DB_ENGINE', 
-        'DB_DRIVER', 
-        'DB_USERNAME', 
-        'DB_PASSWORD', 
-        'DB_HOST', 
-        'DB_PORT', 
-        'DB_NAME', 
-        'DB_PATH', 
-    }
+    #     # DATABASE
+    #     'DB_ENGINE', 
+    #     'DB_DRIVER', 
+    #     'DB_USERNAME', 
+    #     'DB_PASSWORD', 
+    #     'DB_HOST', 
+    #     'DB_PORT', 
+    #     'DB_NAME', 
+    #     'DB_PATH', 
+    # }
 
     # print(f'\n')
 

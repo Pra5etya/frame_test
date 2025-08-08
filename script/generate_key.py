@@ -1,7 +1,10 @@
 from cryptography.fernet import Fernet, InvalidToken
+from config.logger import setup_logger
 from dotenv import load_dotenv
 
 import os, time, json
+
+logger = setup_logger()
 
 # ==========================
 # ENVIRONMENT LOADER
@@ -53,7 +56,7 @@ def dev_key():
     DEV_KEY, _, _ = load_environment()
 
     if os.path.exists(DEV_KEY):
-        print(f"\n[✓] .masterkey sudah ada → {DEV_KEY}")
+        logger.info(f"[✓] .masterkey sudah ada → {DEV_KEY}")
         return
 
     key = generate_master_key()
@@ -61,7 +64,7 @@ def dev_key():
     with open(DEV_KEY, "wb") as f:
         f.write(key)
 
-    print(f"\n[✓] .masterkey berhasil dibuat → {DEV_KEY}")
+    logger.info(f"[✓] .masterkey berhasil dibuat → {DEV_KEY}")
 
 def check_dev_key():
     """
@@ -70,7 +73,7 @@ def check_dev_key():
     DEV_KEY, _, _ = load_environment()
 
     if not DEV_KEY or not os.path.exists(DEV_KEY):
-        print(f"\n[!] .masterkey belum tersedia → {DEV_KEY}")
+        logger.info(f"[!] .masterkey belum tersedia → {DEV_KEY}")
         return
 
     try:
@@ -78,11 +81,11 @@ def check_dev_key():
             key = f.read()
             Fernet(key)  # validasi apakah key benar
 
-        print(f"\n[✓] .masterkey valid → {DEV_KEY}")
+        logger.info(f"[✓] .masterkey valid → {DEV_KEY}")
 
     except Exception as e:
-        print(f"\n[✗] .masterkey korup atau tidak valid → {DEV_KEY}")
-        print(f"[Error] {e}")
+        logger.error(f"[✗] .masterkey korup atau tidak valid → {DEV_KEY}")
+        logger.error(f"[Error] {e}")
 
 # ==========================
 # STAGING KEY MANAGEMENT (env var runtime only)
@@ -93,13 +96,14 @@ def stag_key():
     Set APP_MASTER_KEY di environment runtime jika belum ada
     """
     if os.getenv("APP_MASTER_KEY"):
-        print("\n[✓] APP_MASTER_KEY sudah tersedia di environment.")
+        logger.info("[✓] APP_MASTER_KEY sudah tersedia di environment.")
         return
 
     key = generate_master_key()
     os.environ["APP_MASTER_KEY"] = key.decode()
 
-    print("\n[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+    logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+    print(f'APP_MASTER_KEY: {os.environ["APP_MASTER_KEY"]}')
 
 
 def check_stag_key():
@@ -110,17 +114,17 @@ def check_stag_key():
     key = os.getenv("APP_MASTER_KEY")
 
     if not key:
-        print(f"\n[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+        logger.info(f"[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
         stag_key()
         return  # stop setelah generate key baru
 
     try:
         Fernet(key.encode())  # validasi format key
-        print("\n[✓] APP_MASTER_KEY valid di environment.")
+        logger.info("[✓] APP_MASTER_KEY valid di environment.")
 
     except Exception as e:
-        print("\n[✗] APP_MASTER_KEY korup atau tidak valid.")
-        print(f"[Error] {e}")
+        logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
+        logger.error(f"[Error] {e}")
 
 # ==========================
 # PRODUCTION KEY MANAGEMENT (env var runtime only)

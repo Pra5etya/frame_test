@@ -1,6 +1,7 @@
 from script.generate_key import dev_key, stag_key, prod_key
 from script.encrypt import encrypt_value, load_master_key
 from dotenv import load_dotenv
+from config.logger import setup_logger
 
 import os, secrets
 
@@ -69,6 +70,7 @@ def read_env_lines(env_path: str):
     if os.path.exists(env_path):
         with open(env_path, "r") as f:
             lines = f.readlines()
+            
             print("[INFO] Isi file .env:")
 
             for line in lines:
@@ -147,6 +149,8 @@ def update_env_file(env_input: str, env_dir: str):
     - Menambahkan key yang belum ada
     - Menyimpan hasil ke file
     """
+    logger = setup_logger()
+
     env_path, key = resolve_env(env_input, env_dir)                 # Ambil path dan kunci
     lines = read_env_lines(env_path)                                # Baca isi file
     new_lines, found_keys = process_env_lines(lines, key)           # Enkripsi ulang key yang ditemukan
@@ -159,4 +163,5 @@ def update_env_file(env_input: str, env_dir: str):
     with open(env_path, "w") as f:
         f.writelines(updated_lines)
 
-    print(f"\n[✓] File berhasil diperbarui → {env_path}")
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        logger.info(f"[✓] File berhasil diperbarui → {env_path}")

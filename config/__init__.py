@@ -2,6 +2,8 @@ from config.env_load import valid_and_update  # Fungsi load_env yang baru
 from config.env_set import DevelopmentConfig, StagingConfig, ProductionConfig
 from config.logger import setup_logger  # Misal kamu punya setup_logger() sendiri
 
+import os
+
 # Pemetaan environment ke konfigurasi
 CONFIG_MAP = {
     "development": DevelopmentConfig,
@@ -21,11 +23,8 @@ def register_config():
         raise ValueError(f"Unsupported environment: {resolved_env}")
 
     # Step 4: Logging info
-    print(f"\nUse {resolved_env} configuration")
-    print("=" * 30)
-    print(f"Loaded .env file: {resolved_env} \n")
-
-    logger.info("=" * 30)
-    logger.info(f"Use {resolved_env} configuration")
-    logger.info(f"Loaded .env file: {env_path}")
-    logger.info("=" * 30)
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        logger.info("=" * 30)
+        logger.info(f"Use {resolved_env} configuration")
+        logger.info(f"Loaded .env file: {env_path}")
+        logger.info("=" * 30)
