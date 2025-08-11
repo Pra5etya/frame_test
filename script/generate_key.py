@@ -18,18 +18,22 @@ def load_environment():
     load_dotenv()
 
     # Step 1.2: Dapatkan env dan direktori
-    FLASK_ENV = os.getenv("FLASK_ENV", "")
     ENV_DIR = os.getenv("ENV_DIR", "")
+    INST_DIR = os.getenv("INST_DIR") 
+    LOCAL_KEY = os.getenv("LOCAL_KEY")
+
+    FLASK_ENV = os.getenv("FLASK_ENV", "")
 
     # Step 1.3: Load .env.<env> dengan override (PINDAHKAN KE SINI)
     if FLASK_ENV:
         load_dotenv(f"{ENV_DIR}/.env.{FLASK_ENV}", override=True)
 
     # Step 1.4: Baru ambil variable yang dibutuhkan
-    INST_DIR = os.getenv("INST_DIR") 
-    LOCAL_KEY = os.getenv("LOCAL_KEY")
     DEV_KEY = f"{INST_DIR}/{LOCAL_KEY}" if INST_DIR and LOCAL_KEY else None
     CURRENT_USER = os.getenv("CURRENT_USER")
+
+    print(f'data from flask env: {FLASK_ENV}')
+    print(f'data from current user: {CURRENT_USER}')
 
     return DEV_KEY, INST_DIR, CURRENT_USER
 
@@ -51,9 +55,13 @@ def generate_master_key():
 
 def dev_key():
     """
-    Membuat file .masterkey lokal jika belum ada
+    Membuat file .masterkey lokal jika belum ada.
+    Jika folder instance belum ada, akan dibuat otomatis.
     """
     DEV_KEY, _, _ = load_environment()
+
+    # Pastikan folder instance ada
+    os.makedirs(os.path.dirname(DEV_KEY), exist_ok = True)
 
     if os.path.exists(DEV_KEY):
         logger.info(f"[✓] .masterkey sudah ada → {DEV_KEY}")
