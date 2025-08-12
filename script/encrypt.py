@@ -1,6 +1,8 @@
 from cryptography.fernet import Fernet
-import os
 from dotenv import load_dotenv
+
+import os
+
 
 def load_environment():
     """
@@ -49,6 +51,7 @@ def load_master_key(env: str) -> bytes:
     
     else:
         raise ValueError(f"Unknown environment: {env}")
+
 
 def load_dev_key() -> bytes:
     DEV_KEY, _, _ = load_environment()

@@ -1,8 +1,8 @@
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 from config.logger import setup_logger
 from dotenv import load_dotenv
 
-import os, time, json
+import os, time, threading
 
 logger = setup_logger()
 
@@ -38,6 +38,12 @@ def load_environment():
     return DEV_KEY, INST_DIR, CURRENT_USER
 
 
+
+
+
+
+
+
 # ==========================
 # MASTER KEY GENERATOR
 # ==========================
@@ -47,6 +53,11 @@ def generate_master_key():
     Generate kunci Fernet baru
     """
     return Fernet.generate_key()
+
+
+
+
+
 
 
 # ==========================
@@ -64,15 +75,18 @@ def dev_key():
     os.makedirs(os.path.dirname(DEV_KEY), exist_ok = True)
 
     if os.path.exists(DEV_KEY):
-        logger.info(f"[✓] .masterkey sudah ada → {DEV_KEY}")
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[✓] .masterkey sudah ada → {DEV_KEY}")
         return
 
-    key = generate_master_key()
+    else: 
+        key = generate_master_key()
 
-    with open(DEV_KEY, "wb") as f:
-        f.write(key)
-
-    logger.info(f"[✓] .masterkey berhasil dibuat → {DEV_KEY}")
+        with open(DEV_KEY, "wb") as f:
+            f.write(key)
+            
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[✓] .masterkey berhasil dibuat → {DEV_KEY}")
 
 def check_dev_key():
     """
@@ -81,19 +95,27 @@ def check_dev_key():
     DEV_KEY, _, _ = load_environment()
 
     if not DEV_KEY or not os.path.exists(DEV_KEY):
-        logger.info(f"[!] .masterkey belum tersedia → {DEV_KEY}")
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[!] .masterkey belum tersedia → {DEV_KEY}")
         return
 
     try:
         with open(DEV_KEY, "rb") as f:
             key = f.read()
             Fernet(key)  # validasi apakah key benar
-
-        logger.info(f"[✓] .masterkey valid → {DEV_KEY}")
+        
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[✓] .masterkey valid → {DEV_KEY}")
 
     except Exception as e:
         logger.error(f"[✗] .masterkey korup atau tidak valid → {DEV_KEY}")
         logger.error(f"[Error] {e}")
+
+
+
+
+
+
 
 # ==========================
 # STAGING KEY MANAGEMENT (env var runtime only)
@@ -104,14 +126,18 @@ def stag_key():
     Set APP_MASTER_KEY di environment runtime jika belum ada
     """
     if os.getenv("APP_MASTER_KEY"):
-        logger.info("[✓] APP_MASTER_KEY sudah tersedia di environment.")
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY sudah tersedia di environment.")
         return
 
-    key = generate_master_key()
-    os.environ["APP_MASTER_KEY"] = key.decode()
-
-    logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
-    print(f'APP_MASTER_KEY: {os.environ["APP_MASTER_KEY"]}')
+    else: 
+        key = generate_master_key()
+        os.environ["APP_MASTER_KEY"] = key.decode()
+        
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+        
+        print(f'APP_MASTER_KEY: {os.environ["APP_MASTER_KEY"]}')
 
 
 def check_stag_key():
@@ -122,122 +148,109 @@ def check_stag_key():
     key = os.getenv("APP_MASTER_KEY")
 
     if not key:
-        logger.info(f"[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+
         stag_key()
         return  # stop setelah generate key baru
 
     try:
         Fernet(key.encode())  # validasi format key
-        logger.info("[✓] APP_MASTER_KEY valid di environment.")
+
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY valid di environment.")
 
     except Exception as e:
         logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
         logger.error(f"[Error] {e}")
 
+
+
+
+
+
+
 # ==========================
 # PRODUCTION KEY MANAGEMENT (env var runtime only)
 # ==========================
 
-def get_current_user():
-    # IAM: User ID simulasi dari environment atau sesi login
-    _, _, CURRENT_USER = load_environment()
+# Global state
+rotation_thread_event = threading.Event()
+rotation_lock = threading.Lock()
 
-    return CURRENT_USER or "guest"
+# ===================== ROTATION & THREAD =====================
 
-def prod_key(force_rotate = False):
+def start_thread(interval_minutes = 1):
     """
-    Set APP_MASTER_KEY di environment runtime jika belum ada, atau jika rotasi dipaksa.
+    Jalankan key rotation di background thread (hanya 1 kali per proses utama).
     """
-    _, DIR_INST, _ = load_environment()
-
-    KEY_FILE = os.path.join(DIR_INST, "prod_master.key")
-    EXPIRATION_SECONDS = 600  # 10 menit
-    ALLOWED_USERS = ["admin", "superuser"]  # IAM simulasi
-
-    # IAM check
-    user = get_current_user()
-
-    if user not in ALLOWED_USERS:
-        print(f"\n[✗] Akses ditolak untuk user '{user}'. Hanya admin dapat membuat key.")
-
+    # Pastikan hanya proses utama Werkzeug yang menjalankan rotasi
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         return
+    
+    print(f'ORIGINAL APP_MASTER_KEY: {os.environ["APP_MASTER_KEY"]}\n')
 
-    # Rotasi otomatis berdasarkan waktu
-    if KEY_FILE.exists() and not force_rotate:
-        try:
-            with open(KEY_FILE, "r") as f:
-                data = json.load(f)
-                created_at = data.get("created_at", 0)
+    with rotation_lock:
+        if rotation_thread_event.is_set():
+            # Thread sudah aktif → keluar tanpa bikin thread baru
+            return
+        rotation_thread_event.set()  # tandai sudah aktif
 
-                if time.time() - created_at < EXPIRATION_SECONDS:
-                    os.environ["APP_MASTER_KEY"] = data["key"]
-                    print("\n[✓] APP_MASTER_KEY aktif dan masih valid.")
+    def rotate_key_schedule():
+        while True:
+            time.sleep(interval_minutes * 60)
 
-                    return
-        except Exception as e:
-            print(f"[!] Gagal membaca key file: {e}")
+            new_key = generate_master_key()
+            os.environ["APP_MASTER_KEY"] = new_key.decode()
 
-    # Generate baru
-    key = generate_master_key().decode()
-    os.environ["APP_MASTER_KEY"] = key
+            logger.info(f"[🔄] APP_MASTER_KEY di-rotate setiap {interval_minutes} menit. -> {os.environ["APP_MASTER_KEY"]}")
 
-    # Simpan ke file terenkripsi (sementara dalam bentuk plaintext + waktu)
-    KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(KEY_FILE, "w") as f:
-        json.dump({"key": key, "created_at": time.time()}, f)
+            print(f'APP_MASTER_KEY baru-1: {os.environ["APP_MASTER_KEY"]}')
+            print(f'APP_MASTER_KEY baru-2: {os.environ["APP_MASTER_KEY"]}\n')
 
-    print("\n[✓] APP_MASTER_KEY berhasil dibuat dan disimpan ke instance/.")
+    threading.Thread(target=rotate_key_schedule, name="rotate_key_schedule", daemon=True).start()
 
+    logger.info("[⚙️] Key rotation thread aktif.")
+
+# ===================== KEY MANAGEMENT =====================
+def prod_key():
+    """
+    Set APP_MASTER_KEY di environment runtime jika belum ada.
+    """
+    if os.getenv("APP_MASTER_KEY"):
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY sudah tersedia di environment.")
+    
+    else:
+        key = generate_master_key()
+        os.environ["APP_MASTER_KEY"] = key.decode()
+
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+
+    # Pastikan thread rotasi dimulai hanya sekali
+    start_thread()
 
 def check_prod_key():
     """
     Mengecek apakah APP_MASTER_KEY valid dan bisa digunakan.
-    Jika tidak ada atau sudah expired, akan dibuat baru.
+    Jika tidak ada, akan dibuat baru.
     """
-    _, DIR_INST, _ = load_environment()
-
-    KEY_FILE = os.path.join(DIR_INST, "prod_master.key")
-    EXPIRATION_SECONDS = 600  # 10 menit
-
     key = os.getenv("APP_MASTER_KEY")
 
     if not key:
-        print(f"\n[INFO] APP_MASTER_KEY tidak ditemukan di runtime, mencoba ambil dari instance...")
-        try:
-            with open(KEY_FILE, "r") as f:
-                data = json.load(f)
-                key = data["key"]
-                created_at = data.get("created_at", 0)
-
-                if time.time() - created_at > EXPIRATION_SECONDS:
-                    print("[INFO] APP_MASTER_KEY kadaluarsa, membuat baru...")
-                    prod_key(force_rotate=True)
-
-                    return
-
-                os.environ["APP_MASTER_KEY"] = key
-                print("\n[✓] APP_MASTER_KEY berhasil di-set dari file instance.")
-
-        except FileNotFoundError:
-            print("[INFO] File key tidak ditemukan, membuat baru...")
-            prod_key()
-
-        except Exception as e:
-            print("[✗] Gagal membaca key dari file.")
-            print(f"[Error] {e}")
-            prod_key()
-
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+        
+        #
+        prod_key()
         return
 
-    # Validasi format key
     try:
         Fernet(key.encode())
-        print("\n[✓] APP_MASTER_KEY valid di environment.")
-
-    except InvalidToken:
-        print("\n[✗] APP_MASTER_KEY tidak valid, merotasi...")
-        prod_key(force_rotate=True)
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY valid di environment.")
 
     except Exception as e:
-        print(f"\n[✗] APP_MASTER_KEY error.\n[Error] {e}")
-        prod_key(force_rotate=True)
+        logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
+        logger.error(f"[Error] {e}")

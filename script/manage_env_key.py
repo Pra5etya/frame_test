@@ -1,7 +1,11 @@
+# Meng-enkripsi file utama guna melindungi value dari environment
 from script.generate_key import dev_key, stag_key, prod_key
+
+# Meng-enkripsi nilai secret pada environment
 from script.encrypt import encrypt_value, load_master_key
-from dotenv import load_dotenv
+
 from config.logger import setup_logger
+from dotenv import load_dotenv
 
 import os, secrets
 
