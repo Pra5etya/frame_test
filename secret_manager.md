@@ -83,7 +83,7 @@ def load_gcp_secret_key() -> bytes:
 | ☁️ Penyimpanan cloud      | ✅ Bisa optional       | Gunakan GCS, S3, atau private Git repo bila mau remote storage |
 
 ## Hal yang harus di implementasi:
-* Enkripsi nilai secret
-* Rotasi otomatis (dalam beberapa menit)
-* Kontrol akses (IAM)
-* Penyimpanan ke luar atau ke folder instance
+* Key Rotation with schedule dengan waktu 1 menit beserta thread process background
+* IAM for user access
+* Menerapkan key pool (min and max nya)
+* Menerapkan grace period supaya key lama tidak langsung dibuang setelah rotasi.

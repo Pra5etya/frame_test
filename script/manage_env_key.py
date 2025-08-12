@@ -75,10 +75,10 @@ def read_env_lines(env_path: str):
         with open(env_path, "r") as f:
             lines = f.readlines()
             
-            print("[INFO] Isi file .env:")
+            # print("[INFO] Isi file .env:")
 
-            for line in lines:
-                print(line.strip())
+            # for line in lines:
+            #     print(line.strip())
 
             return lines
     return []

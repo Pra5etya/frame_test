@@ -26,7 +26,3 @@ py encrypt_env.py stag || py encrypt_env.py pro
 * penggunaan APP_MASTER_KEY hanya diterapkan pada runtimen namun masih bisa dilihat menggunakan os.getenv namun tidak disimpan ke dalam .env stag
 
 # NEXT
-1. Key Rotation with schedule dengan waktu 5 menit beserta thread process background
-2. IAM for user access
-3. Menerapkan key pool (min and max nya)
-4. Menerapkan grace period supaya key lama tidak langsung dibuang setelah rotasi.
