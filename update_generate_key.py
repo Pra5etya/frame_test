@@ -251,7 +251,8 @@ def stop_thread():
         return
 
     rotation_stop_event.set()
-    logger.info("[🛑] Key rotation thread dihentikan.")
+    logger.info("[🛑] Key rotation thread & Server dihentikan.")
+    
 
 # Daftarkan stop_thread saat app keluar
 atexit.register(stop_thread)

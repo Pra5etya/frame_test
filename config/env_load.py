@@ -34,7 +34,7 @@ def get_CLI():
     # 
     if len(sys.argv) > 1:
         env_input = sys.argv[1].lower()
-        print(f'\nAmbil dari CLI: {env_input}')
+        print(f'\nAmbil dari CLI: {env_input} \n')
 
     elif FLASK_ENV:
         env_input = FLASK_ENV.lower()

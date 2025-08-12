@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet
 from config.logger import setup_logger
 from dotenv import load_dotenv
 
-import os, time, threading
+import os, time, threading, atexit
 
 logger = setup_logger()
 
@@ -187,99 +187,31 @@ ALLOWED_USERS = os.getenv("ALLOWED_USERS", "").split(",")
 
 # ========================== STATE ==========================
 rotation_thread_event = threading.Event()
+rotation_stop_event = threading.Event()    # sinyal untuk menghentikan thread
 rotation_lock = threading.Lock()
 key_pool = []  # simpan (key_string, timestamp_created)
 
 
-# ========================== IAM CHECK ==========================
-def iam_check():
-    """
-    Pastikan CURRENT_USER diizinkan untuk mengakses key management.
-    """
-    if CURRENT_USER not in ALLOWED_USERS:
-        logger.warning(
-            f"[SECURITY] Unauthorized access attempt by user '{CURRENT_USER}'. "
-            f"Allowed users: {ALLOWED_USERS}"
-        )
-        raise PermissionError(f"User '{CURRENT_USER}' tidak diizinkan mengakses key management.")
+from script.iam_user import iam_check
+from script.rotation_thread import start_thread
 
-
-
-# ===================== ROTATION & THREAD =====================
-import atexit
-
-rotation_thread_event = threading.Event()  # menandakan thread aktif
-rotation_stop_event = threading.Event()    # sinyal untuk menghentikan thread
-
-def start_thread():
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-        return
-
-    with rotation_lock:
-        if rotation_thread_event.is_set():
-            return
-        rotation_thread_event.set()
-
-    def rotate_schedule():
-        while not rotation_stop_event.is_set():
-            if rotation_stop_event.wait(INTERVAL_MINUTES * 60):
-                break
-            new_key = generate_master_key()
-            os.environ["APP_MASTER_KEY"] = new_key.decode()
-            key_pool.append((new_key.decode(), time.time()))
-
-            cleanup_key_pool()
-            
-            logger.info(f"[🔄] APP_MASTER_KEY di-rotate -> {os.environ['APP_MASTER_KEY']}")
-            print(f'\nAPP_MASTER_KEY baru-1: {os.environ["APP_MASTER_KEY"]}')
-            print(f'APP_MASTER_KEY baru-2: {os.environ["APP_MASTER_KEY"]}')
-
-
-    threading.Thread(
-        target=rotate_schedule,
-        name="rotate_schedule",
-        daemon=True
-    ).start()
-
-    logger.info("[⚙️] Key rotation thread aktif.")
-
-def stop_thread():
-    """
-    Menghentikan thread rotasi key secara bersih.
-    """
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
-        return
-
-    rotation_stop_event.set()
-    logger.info("[🛑] Key rotation thread dihentikan.")
-
-# Daftarkan stop_thread saat app keluar
-atexit.register(stop_thread)
-
-
-# ===================== KEY MANAGEMENT =====================
 def prod_key():
-    iam_check()  # cek IAM
+    iam_check()
 
     if os.getenv("APP_MASTER_KEY"):
-        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ["APP_MASTER_KEY"]}")
-            print(f"\n[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ["APP_MASTER_KEY"]}\n")
+        logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ['APP_MASTER_KEY']}")
 
     else:
         key = generate_master_key()
         os.environ["APP_MASTER_KEY"] = key.decode()
+        
         key_pool.append((key.decode(), time.time()))
+        logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
 
-        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
-
-    # Pastikan minimal key pool terisi
     while len(key_pool) < MIN_KEY_POOL:
         new_key = generate_master_key().decode()
         key_pool.append((new_key, time.time()))
 
-    # Pastikan thread rotasi dimulai hanya sekali
     start_thread()
 
 def check_prod_key():
@@ -294,24 +226,9 @@ def check_prod_key():
     try:
         Fernet(key.encode())
         logger.info("[✓] APP_MASTER_KEY valid di environment.")
+
     except Exception as e:
         logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
         logger.error(f"[Error] {e}")
+
         prod_key()
-
-# ===================== POOL CLEANUP =====================
-def cleanup_key_pool():
-    now = time.time()
-    while len(key_pool) > MAX_KEY_POOL or (
-        key_pool and now - key_pool[0][1] > GRACE_PERIOD_SEC
-    ):
-        removed_key, ts = key_pool.pop(0)
-        logger.info(f"[🗑] Key lama dihapus dari pool: {removed_key}")
-
-# ===================== VALIDASI KEY REQUEST =====================
-def is_key_valid(input_key):
-    now = time.time()
-    for k, ts in key_pool:
-        if k == input_key and now - ts <= GRACE_PERIOD_SEC:
-            return True
-    return False
