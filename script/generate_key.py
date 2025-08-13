@@ -1,5 +1,7 @@
 from cryptography.fernet import Fernet
 from config.logger import setup_logger
+
+
 from dotenv import load_dotenv
 
 import os, time, threading, atexit
@@ -186,36 +188,48 @@ ALLOWED_USERS = os.getenv("ALLOWED_USERS", "").split(",")
 
 
 # ========================== STATE ==========================
+first_runtime_key = None  # <-- deklarasi supaya bisa diimpor
 rotation_thread_event = threading.Event()
 rotation_stop_event = threading.Event()    # sinyal untuk menghentikan thread
 rotation_lock = threading.Lock()
 key_pool = []  # simpan (key_string, timestamp_created)
 
 
-from script.iam_user import iam_check
-from script.rotation_thread import start_thread
-
 def prod_key():
+    from script.iam_user import iam_check
+    from script.rotation_thread import start_thread
+    from script.key_pool import reset_pool
+
+    global first_runtime_key    # Var yang digunakan secara global untuk Key Pool, karena aplikasi hanya melewati prod_key()
+
     iam_check()
 
     if os.getenv("APP_MASTER_KEY"):
-        logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ['APP_MASTER_KEY']}")
-
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ['APP_MASTER_KEY']}")
     else:
         key = generate_master_key()
         os.environ["APP_MASTER_KEY"] = key.decode()
         
         key_pool.append((key.decode(), time.time()))
-        logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+        first_runtime_key = key.decode()  # simpan sebagai key pertama runtime
+
+        if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
 
     while len(key_pool) < MIN_KEY_POOL:
         new_key = generate_master_key().decode()
         key_pool.append((new_key, time.time()))
 
+    reset_pool()
+
     start_thread()
 
+
+
 def check_prod_key():
-    iam_check()
+    # iam_check()
+
     key = os.getenv("APP_MASTER_KEY")
 
     if not key:
@@ -230,5 +244,7 @@ def check_prod_key():
     except Exception as e:
         logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
         logger.error(f"[Error] {e}")
+
+        logger.info("[!] Membuat Baru APP_MASTER_KEY...")
 
         prod_key()
