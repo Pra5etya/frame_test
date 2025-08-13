@@ -2,12 +2,14 @@
 dalam pembuatan aplikasi khusus nya pada config environment (dev, stag, prod) ditaruh di dalam folder sendiri bersamaan dengan base-nya
 
 usahakan dalam pembuatan config dalam web urutannya yakni sebagai berikut:
-1. log
-2. data
-3. backup
-4. base
-5. environment yang ingin di terapkan
-6. notifikasi
+
+1. logger
+2. environment (set dan load env; base -> dev, stag, prod)
+
+3. data
+4. backup
+5. notifikasi
+
 
 # crypto section
 * untuk secret key sebaiknya membuat script baru untuk generate keynya, misal **generate_key.py** namun hasil enkripsi disimpan pada masing" variabel .env-nya
@@ -18,11 +20,33 @@ usahakan dalam pembuatan config dalam web urutannya yakni sebagai berikut:
 py encrypt_env.py stag || py encrypt_env.py pro 
 ```
 
-* jika sudah maka tinggal buat file decrypt-nya di direktori config, lalu di implementasikan ke dalamm app utama
 
 * note: jangan sampai file permission longgar pada hosting
 
-* file .masterkey sebaiknya dimasukan ke dalam instance dan hanya digunakan pada **environment development** dan hanya di generate sekali saja jadi sebaiknya tidak di generate terus menerus
-* penggunaan APP_MASTER_KEY hanya diterapkan pada runtimen namun masih bisa dilihat menggunakan os.getenv namun tidak disimpan ke dalam .env stag
+* .masterkey diterapkan pada **.env.development** dengan otomatsi disimpan pada **/instance**
+
+* penggunaan APP_MASTER_KEY hanya diterapkan pada runtimen (tidak disimpan). Pada production tambahkan secret manager (bisa vendor / bikin sendiri)
+
 
 # NEXT
+* bagaimana pembuatan production key bisa validasi pada setiap halaman di website baik front end atau backend, serta bagaimana jika terdapat kasus halaman tersebut dibiarkan lama apakah akan berpengaruh terhadap validasi kuncinya pada key pool
+
+* Kemanan tambahan
+    * Replay attack protection → sertakan timestamp + nonce di payload dan validasi.
+    * Audit log → simpan key ID yang digunakan untuk verifikasi.
+    * Gunakan TLS → rotasi key tidak berguna kalau koneksi tidak dienkripsi.
+
+* Kapan Redis Dipakai?
+    * Redis sering digunakan untuk:
+        1. Caching (misalnya cache hasil query database biar nggak query berulang-ulang).
+        2. Session store (menyimpan data session login user).
+        3. Message broker (pub/sub).
+        4. Rate limiting (membatasi request API).
+        5. Leaderboard (menggunakan sorted set).
+
+
+
+# Developer Activity Bar
+* bagaimana cara bundle atau minify di web menggunaan flask
+* apa itu Headers dan bagaimana saya bisa memanfaatkan hal tersebut seperti -> Content-Type, Authorization (JWT token, session cookie), dll.
+* 

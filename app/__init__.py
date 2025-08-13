@@ -1,7 +1,7 @@
 from flask import Flask
 from app.extension import db, migrate, login_manager
 
-import os, sys, time
+import os
 
 
 def create_app():
@@ -13,6 +13,7 @@ def create_app():
                 static_url_path = '/', 
                 static_folder = 'static', 
                 template_folder = 'templates')
+
 
     # =================
     # 2. config
