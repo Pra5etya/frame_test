@@ -34,7 +34,7 @@ def start_thread():
             
             logger.info(f"[🔄] APP_MASTER_KEY di-rotate -> {os.environ['APP_MASTER_KEY']}")
             print(f'\nAPP_MASTER_KEY baru-1: {os.environ["APP_MASTER_KEY"]}')
-            print(f'APP_MASTER_KEY baru-2: {os.environ["APP_MASTER_KEY"]}')
+            print(f'APP_MASTER_KEY baru-2: {os.environ["APP_MASTER_KEY"]}\n')
 
     threading.Thread(
         target=rotate_schedule,
@@ -49,6 +49,6 @@ def stop_thread():
         return
 
     rotation_stop_event.set()
-    logger.info("[🛑] Key rotation thread dihentikan.")
+    logger.info("[🛑] Key rotation & Server dihentikan.")
 
 atexit.register(stop_thread)

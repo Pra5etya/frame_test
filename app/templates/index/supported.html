@@ -2,3 +2,37 @@
 
 <!-- value default jika id <> result -->
 <div id="result">Mendeteksi browser...</div>
+
+
+<!-- <h1>Test API Key Middleware</h1>
+    <button id="testBtn">Test Secure Endpoint</button>
+
+    <pre id="output"></pre>
+
+    <script>
+    document.getElementById("testBtn").addEventListener("click", async () => {
+        try {
+            // 1. Ambil key dari server
+            let keyRes = await fetch("/get-key");
+            let keyData = await keyRes.json();
+            if (keyData.status !== "success") {
+                document.getElementById("output").textContent = JSON.stringify(keyData, null, 2);
+                return;
+            }
+
+            let apiKey = keyData.api_key;
+
+            // 2. Akses secure endpoint dengan header
+            let secureRes = await fetch("/secure", {
+                headers: {
+                    "X-API-Key": apiKey
+                }
+            });
+            let secureData = await secureRes.json();
+
+            document.getElementById("output").textContent = JSON.stringify(secureData, null, 2);
+        } catch (err) {
+            document.getElementById("output").textContent = err;
+        }
+    });
+    </script> -->

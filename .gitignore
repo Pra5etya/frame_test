@@ -7,6 +7,7 @@ app/models/__pycache__
 app/routes/__pycache__
 
 config/__pycache__
+middleware/__pycache__
 
 scheduler/__pycache__
 

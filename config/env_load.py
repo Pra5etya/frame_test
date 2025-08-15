@@ -34,15 +34,15 @@ def get_CLI():
     # 
     if len(sys.argv) > 1:
         env_input = sys.argv[1].lower()
-        print(f'\nAmbil dari CLI: {env_input} \n')
+        # print(f'\nAmbil dari CLI: {env_input} \n')
 
     elif FLASK_ENV:
         env_input = FLASK_ENV.lower()
-        print(f'\nAmbil dari ENV: {env_input}')
+        # print(f'\nAmbil dari ENV: {env_input}')
         
     else:
         env_input = "dev"  # ✅ default jika kosong semua
-        print(f'\nAmbil dari default: {env_input}')
+        # print(f'\nAmbil dari default: {env_input}')
 
     # 
     resolved_env = ALIAS_MAP.get(env_input, env_input)

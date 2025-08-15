@@ -31,15 +31,25 @@ def create_app():
         logger.info("Flask is restarting...")
         logger.info("Log Start ...")
 
+
     # 2.2 env setup
     # =================
 
     from config import register_config
 
-    configuration = register_config()
+    configuration = register_config(core)
 
     # Terapkan ke Flask app 
     core.config.from_object(configuration)   
+
+
+    # 2.3 middleware setup
+    # =================
+
+    from app.middleware import register_middleware
+
+    register_middleware(core)
+
 
     # =================
     # 1. routes
