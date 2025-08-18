@@ -1,41 +1,88 @@
-from flask import request, session, redirect, url_for, current_app
+from flask import request, session, redirect, url_for, make_response
 from script.generate_key import key_pool
 from config.logger import setup_logger
 
 logger = setup_logger()
 
-_last_active_key = None
+SESSION_KEY_NAME = "MASTER_KEY_AUTH"
+COOKIE_NAME = "MASTER_KEY_AUTH"
 
-def sync_flask_secret_key(app):
-    global _last_active_key
-    if key_pool:
-        active_key = key_pool[-1][0]
-        if active_key != _last_active_key:
-            app.secret_key = active_key
-            _last_active_key = active_key
-            logger.info("Flask secret_key diperbarui dari key_pool.")
-    else:
-        logger.warning("Key pool kosong, secret key tetap.")
+WHITELIST_ROUTES = [
+    "static",
+    "main.forbidden",
+    "main.unsupported",
+]
 
+# ==========================
+# Helper
+# ==========================
+
+def get_active_key():
+    return key_pool[-1][0] if key_pool else None
+
+def set_session(active_key):
+    """Simpan active_key ke Flask session"""
+    logger.info("Menambahkan active_key ke session Flask")
+    session[SESSION_KEY_NAME] = active_key
+
+def validate_session(active_key):
+    """Validasi session Flask"""
+    session_key = session.get(SESSION_KEY_NAME)
+    if not session_key:
+        logger.warning("Session kosong")
+        return False
+    if session_key != active_key:
+        logger.warning("Session tidak valid")
+        return False
+    return True
+
+def set_cookie(resp, active_key):
+    """Set custom cookie"""
+    logger.info("Menambahkan cookie custom")
+    resp.set_cookie(
+        COOKIE_NAME,
+        active_key,
+        httponly=True,
+        secure=False,   # True kalau HTTPS
+        samesite="Lax"
+    )
+    return resp
+
+def validate_cookie(active_key):
+    """Validasi cookie custom"""
+    cookie_val = request.cookies.get(COOKIE_NAME)
+    if not cookie_val:
+        logger.warning("Cookie tidak ditemukan")
+        return False
+    if cookie_val != active_key:
+        logger.warning("Cookie tidak valid")
+        return False
+    return True
+
+# ==========================
+# Middleware
+# ==========================
 
 def key_checking():
-    sync_flask_secret_key(current_app)
-
-    WHITELIST_ROUTES = [
-        "static",
-        "main.login_key",
-        "main.unsupported",
-    ]
-
     if request.endpoint in WHITELIST_ROUTES:
         return
 
-    if "key" not in session and key_pool:
-        session["authenticated"] = False
-        session["key"] = key_pool[-1][0]
-        logger.info("Session awal dibuat otomatis.")
+    active_key = get_active_key()
+    if not active_key:
+        logger.warning("Tidak ada master key aktif")
+        return redirect(url_for("main.forbidden"))
 
-    if not session.get("authenticated") or session.get("key") != key_pool[-1][0]:
-        logger.warning("Session tidak valid atau key berubah.")
+    # Validasi session + cookie
+    valid_sess = validate_session(active_key)
+    valid_cook = validate_cookie(active_key)
+
+    if not (valid_sess and valid_cook):
+        logger.warning("Session / cookie invalid → reset ulang")
+
+        # Reset session
         session.clear()
-        return redirect(url_for("main.login_key"))
+        set_session(active_key)
+
+        # Reset cookie
+        resp = make_response(redirect(request.url))
+        return set_cookie(resp, active_key)

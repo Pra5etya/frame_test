@@ -26,12 +26,16 @@ def register_config(app):
     else:
         app.secret_key = "fallback_secret"
 
-    # Konfigurasi cookie session
-    app.config.update(
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SECURE=False,  # True jika HTTPS
-        SESSION_COOKIE_SAMESITE='Lax'
-    )
+
+
+    # # Konfigurasi cookie session
+    # app.config.update(
+    #     SESSION_COOKIE_HTTPONLY=True,
+    #     SESSION_COOKIE_SECURE=False,  # True jika HTTPS
+    #     SESSION_COOKIE_SAMESITE='Lax'
+    # )
+
+
 
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         logger.info("=" * 30)

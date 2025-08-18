@@ -36,17 +36,41 @@ py encrypt_env.py stag || py encrypt_env.py pro
     * Audit log → simpan key ID yang digunakan untuk verifikasi.
     * Gunakan TLS → rotasi key tidak berguna kalau koneksi tidak dienkripsi.
 
-* Kapan Redis Dipakai?
-    * Redis sering digunakan untuk:
-        1. Caching (misalnya cache hasil query database biar nggak query berulang-ulang).
-        2. Session store (menyimpan data session login user).
-        3. Message broker (pub/sub).
-        4. Rate limiting (membatasi request API).
-        5. Leaderboard (menggunakan sorted set).
+1. Caching (misalnya cache hasil query database biar nggak query berulang-ulang).
+2. Session store (menyimpan data session login user).
+3. Message broker (pub/sub).
+4. Rate limiting (membatasi request API).
+5. Leaderboard (menggunakan sorted set).
 
 
 
 # Developer Activity Bar
 * bagaimana cara bundle atau minify di web menggunaan flask
 * apa itu Headers dan bagaimana saya bisa memanfaatkan hal tersebut seperti -> Content-Type, Authorization (JWT token, session cookie), dll.
-* 
+
+
+* Penerapana local / session storage menggunakan python tidak bisa karena, Ini murni fitur browser. Server (Python/Flask) tidak bisa langsung nulis ke localStorage/sessionStorage.
+
+
+# Middleware:
+1. Session + Cookie hybrid
+    * Session Flask = mirror payload token (server side).
+    * Cookie MASTER_KEY_AUTH = menyimpan token "key|user_id|iat|exp|scope".
+    * Kalau salah satunya invalid, sistem auto-refresh token.
+
+2. Multi-user
+    * Tiap user (browser) diberi USER_ID (UUID) via cookie USER_ID.
+    * Jadi tidak ada bentrok antar user.
+
+3. Expiry & Key rotation
+    * Token expired otomatis di-refresh.
+    * Kalau active_key (dari key_pool) berubah, middleware juga otomatis rotasi.
+
+4. Anti redirect loop
+    * Redirect hanya sekali (pakai query _mk=1 + cookie MK_BOOTSTRAPPED).
+    * Kalau setelah bounce masih gagal, diarahkan ke /forbidden.
+
+5. Strict mode (baru ditambahkan)
+    * Dekorator @require_scope("admin") bisa dipasang di route.
+    * Cek scope user (default "basic").
+    * Kalau mismatch → redirect ke /forbidden.
