@@ -85,3 +85,8 @@ py encrypt_env.py stag || py encrypt_env.py pro
 | `"mongodb"`     | MongoDB                                       | Disimpan di koleksi MongoDB.                                                   |
 | `"sqlalchemy"`  | Database SQL (PostgreSQL, MySQL, SQLite, dll) | Disimpan di tabel via SQLAlchemy.                                              |
 | `"gaememcache"` | Google App Engine memcache                    | Khusus jika aplikasi jalan di GAE.                                             |
+
+
+
+
+# server-side sessions + Cookies
