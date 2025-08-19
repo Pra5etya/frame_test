@@ -23,7 +23,7 @@ def start_thread():
 
     def rotate_schedule():
         while not rotation_stop_event.is_set():
-            if rotation_stop_event.wait(INTERVAL_MINUTES * 60):
+            if rotation_stop_event.wait(INTERVAL_MINUTES * 30): # settingan waktu untuk interval waktu
                 break
 
             new_key = generate_master_key()
@@ -32,9 +32,16 @@ def start_thread():
 
             cleanup_key_pool()
             
-            logger.info(f"[🔄] APP_MASTER_KEY di-rotate -> {os.environ['APP_MASTER_KEY']}")
-            print(f'\nAPP_MASTER_KEY baru-1: {os.environ["APP_MASTER_KEY"]}')
-            print(f'APP_MASTER_KEY baru-2: {os.environ["APP_MASTER_KEY"]}\n')
+            logger.info(f"[🔄] SIGN-KEY di-rotate -> {os.environ['APP_MASTER_KEY']}")
+
+            print(f'\nSIGN-KEY CHECK-1: {os.environ["APP_MASTER_KEY"]}')
+            print(f'SIGN-KEY CHECK-2: {os.environ["APP_MASTER_KEY"]}\n')
+
+            for i, item in enumerate(key_pool, start=1): 
+                print(f"{i}. {item[0]}")
+
+            print()
+
 
     threading.Thread(
         target=rotate_schedule,
@@ -42,7 +49,7 @@ def start_thread():
         daemon=True
     ).start()
 
-    logger.info("[⚙️] Key rotation thread aktif.")
+    logger.info("[⚙️] Key rotation aktif.")
 
 def stop_thread():
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':

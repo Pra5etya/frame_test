@@ -3,37 +3,16 @@
 <!-- value default jika id <> result -->
 <div id="result">
     <p>Mendeteksi browser...</p>
-    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. At, quod?</p>
 </div>
 
-    <button id="testBtn">Test Secure Endpoint</button>
+<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. At, quod?</p>
 
-    <pre id="output"></pre>
+<h1>Halaman Utama</h1>
+  
+  <h3>Debug Info</h3>
+  <ul>
+    <li><b>Sign key (latest):</b> {{ latest_key }}</li> <!-- <-- tambahkan ini --><br>
 
-    <script>
-    document.getElementById("testBtn").addEventListener("click", async () => {
-        try {
-            // 1. Ambil key dari server
-            let keyRes = await fetch("/get-key");
-            let keyData = await keyRes.json();
-            if (keyData.status !== "success") {
-                document.getElementById("output").textContent = JSON.stringify(keyData, null, 2);
-                return;
-            }
-
-            let apiKey = keyData.api_key;
-
-            // 2. Akses secure endpoint dengan header
-            let secureRes = await fetch("/secure", {
-                headers: {
-                    "X-API-Key": apiKey
-                }
-            });
-            let secureData = await secureRes.json();
-
-            document.getElementById("output").textContent = JSON.stringify(secureData, null, 2);
-        } catch (err) {
-            document.getElementById("output").textContent = err;
-        }
-    });
-    </script> -->
+    <li><b>Session key:</b> {{ session.get('SESSION_MK_AUTH') }}</li>
+    <li><b>Cookie key:</b> {{ request.cookies.get('COOKIE_MK_AUTH') }}</li>
+  </ul>

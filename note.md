@@ -55,7 +55,7 @@ py encrypt_env.py stag || py encrypt_env.py pro
 # Middleware:
 1. Session + Cookie hybrid
     * Session Flask = mirror payload token (server side).
-    * Cookie MASTER_KEY_AUTH = menyimpan token "key|user_id|iat|exp|scope".
+    * Cookie SAMPLE_MK_AUTH = menyimpan token "key|user_id|iat|exp|scope".
     * Kalau salah satunya invalid, sistem auto-refresh token.
 
 2. Multi-user
@@ -74,3 +74,14 @@ py encrypt_env.py stag || py encrypt_env.py pro
     * Dekorator @require_scope("admin") bisa dipasang di route.
     * Cek scope user (default "basic").
     * Kalau mismatch → redirect ke /forbidden.
+
+# Session type using flask_session
+| `SESSION_TYPE`  | Backend penyimpanan                           | Keterangan                                                                     |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------------------ |
+| `"null"`        | Tidak menyimpan apa-apa                       | Cocok untuk testing (dummy).                                                   |
+| `"filesystem"`  | Filesystem lokal                              | Default paling mudah, session disimpan di file sementara.                      |
+| `"redis"`       | Redis                                         | Disimpan di in-memory database Redis. Sangat cepat dan cocok untuk production. |
+| `"memcached"`   | Memcached                                     | Alternatif cache in-memory, mirip Redis.                                       |
+| `"mongodb"`     | MongoDB                                       | Disimpan di koleksi MongoDB.                                                   |
+| `"sqlalchemy"`  | Database SQL (PostgreSQL, MySQL, SQLite, dll) | Disimpan di tabel via SQLAlchemy.                                              |
+| `"gaememcache"` | Google App Engine memcache                    | Khusus jika aplikasi jalan di GAE.                                             |

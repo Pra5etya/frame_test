@@ -1,8 +1,15 @@
-from .mk_required import key_checking
+from .master import before_request_handler, after_request_handler
 
 def register_middleware(app):
-    """Registrasi semua middleware global."""
-    
+    """Registrasi middleware global"""
+
     @app.before_request
-    def before_any_request():
-        return key_checking()  # tambahkan return agar redirect langsung dieksekusi
+    def _before():
+        # return before_request_handler()
+        return 'before middleware'
+
+    @app.after_request
+    def _after(response):
+        # return after_request_handler(response)
+        return 'after middleware'
+
