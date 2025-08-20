@@ -9,10 +9,11 @@
 
 <h1>Halaman Utama</h1>
   
-  <h3>Debug Info</h3>
-  <ul>
-    <li><b>Sign key (latest):</b> {{ latest_key }}</li> <!-- <-- tambahkan ini --><br>
+<h3>Debug Info</h3>
 
-    <li><b>Session key:</b> {{ session.get('SESSION_MK_AUTH') }}</li>
-    <li><b>Cookie key:</b> {{ request.cookies.get('COOKIE_MK_AUTH') }}</li>
-  </ul>
+<ul>
+  <li><b>Sign key (latest):</b> {{ latest_key }}</li>
+  <br>
+  <li><b>Session key:</b> {{ session_key }}</li>
+  <li><b>Cookie key:</b> {{ cookie_key }}</li>
+</ul>

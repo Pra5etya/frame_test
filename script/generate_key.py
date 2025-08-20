@@ -129,8 +129,8 @@ def stag_key():
     """
     if os.getenv("APP_MASTER_KEY"):
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ["APP_MASTER_KEY"]}")
-            print(f"\n[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ["APP_MASTER_KEY"]}\n")
+            logger.info(f"[✓] APP_MASTER_KEY sudah ada di environment.")
+            print(f"[✓] APP_MASTER_KEY sudah ada di environment.")
         return
 
     else: 
@@ -139,6 +139,7 @@ def stag_key():
         
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
             logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+            print("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
         
         print(f'APP_MASTER_KEY: {os.environ["APP_MASTER_KEY"]}')
 
@@ -206,7 +207,9 @@ def prod_key():
 
     if os.getenv("APP_MASTER_KEY"):
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            logger.info(f"[✓] APP_MASTER_KEY sudah tersedia di environment. ORIGINAL KEY-> {os.environ['APP_MASTER_KEY']}")
+            logger.info(f"[✓] APP_MASTER_KEY sudah ada di environment.")
+            print(f"[✓] APP_MASTER_KEY sudah ada di environment.")
+
     else:
         key = generate_master_key()
         os.environ["APP_MASTER_KEY"] = key.decode()
@@ -216,6 +219,7 @@ def prod_key():
 
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
             logger.info("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
+            print("[✓] APP_MASTER_KEY berhasil di-set sementara (runtime only).")
 
     while len(key_pool) < MIN_KEY_POOL:
         new_key = generate_master_key().decode()
@@ -234,17 +238,24 @@ def check_prod_key():
 
     if not key:
         logger.info("[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+        print("[INFO] APP_MASTER_KEY tidak ditemukan di env, membuat baru...")
+
         prod_key()
         return
 
     try:
         Fernet(key.encode())
         logger.info("[✓] APP_MASTER_KEY valid di environment.")
+        print("[✓] APP_MASTER_KEY valid di environment.")
 
     except Exception as e:
         logger.error("[✗] APP_MASTER_KEY korup atau tidak valid.")
+        print("[✗] APP_MASTER_KEY korup atau tidak valid.")
+        
         logger.error(f"[Error] {e}")
+        print(f"[Error] {e}")
 
         logger.info("[!] Membuat Baru APP_MASTER_KEY...")
+        print("[!] Membuat Baru APP_MASTER_KEY...")
 
         prod_key()

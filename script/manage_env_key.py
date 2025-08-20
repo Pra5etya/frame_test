@@ -168,4 +168,4 @@ def update_env_file(env_input: str, env_dir: str):
         f.writelines(updated_lines)
 
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        logger.info(f"[✓] File berhasil diperbarui → {env_path}")
+        logger.info(f"[✓] File berhasil diperbarui → {env_path} \n")

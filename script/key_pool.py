@@ -20,15 +20,10 @@ def reset_pool():
         first_runtime_key = original_key
 
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            logger.info(f"[♻️] Key pool di-reset dengan ORIGINAL KEY: {original_key}")
+            logger.info(f"[♻️] Key pool di-reset dengan ORIGINAL KEY: {original_key} \n")
     else:
         if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
             logger.warning("[⚠️] Tidak ada ORIGINAL KEY di environment saat reset.")
-
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        # Tambahkan log jumlah & isi key
-        logger.info(f"[📊] Jumlah key dalam pool setelah reset: {len(key_pool)}")
-        logger.info(f"[🔑] Isi key_pool: {[k for k, _ in key_pool]}")
 
 
 def cleanup_key_pool():
@@ -42,7 +37,7 @@ def cleanup_key_pool():
             if k == first_runtime_key:
                 removed_key, _ = key_pool.pop(i)
 
-                logger.info(f"[🗑] Key pertama runtime dihapus: {removed_key}")
+                logger.info(f"[🗑] Key pertama runtime dihapus: {removed_key} \n")
 
                 first_runtime_key = None
                 break
@@ -57,4 +52,4 @@ def cleanup_key_pool():
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         # Tambahkan log jumlah & isi key
         logger.info(f"[📊] Jumlah key dalam pool setelah cleanup: {len(key_pool)}")
-        logger.info(f"[🔑] Isi key_pool: {[k for k, _ in key_pool]}")
+        logger.info(f"[🔑] Isi key_pool: {[k for k, _ in key_pool]} \n")

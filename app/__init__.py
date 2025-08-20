@@ -28,8 +28,9 @@ def create_app():
 
     # Hanya log "Restart" ketika proses utama berjalan setelah restart
     if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        logger.info(f"{"="  * 30} LOGGER STARTING POINT {"="  * 30} \n")
         logger.info("Flask is restarting...")
-        logger.info("Log Start ...")
+        logger.info("Log Start ... \n")
 
 
     # 2.2 env setup

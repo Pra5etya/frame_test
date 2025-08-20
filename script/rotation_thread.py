@@ -56,6 +56,8 @@ def stop_thread():
         return
 
     rotation_stop_event.set()
-    logger.info("[🛑] Key rotation & Server dihentikan.")
+    logger.info("\n[🛑] Key rotation & Server dihentikan. \n")
+    logger.info(f"{"="  * 30} LOGGER ENDING POINT {"="  * 30}")
+
 
 atexit.register(stop_thread)

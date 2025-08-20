@@ -1,7 +1,10 @@
-from flask import Blueprint, render_template, jsonify, make_response
+from flask import Blueprint, render_template, jsonify, request, make_response
 from config.logger import setup_logger
 from script.generate_key import key_pool
-from app.middleware.master import sign_key
+
+from ..middleware.master import sign_key
+from ..middleware.session_store import get_session
+
 
 main_bp = Blueprint('main', __name__)
 logger = setup_logger()
@@ -9,18 +12,23 @@ logger = setup_logger()
 @main_bp.route("/")
 def index():
     logger.info("Memasuki halaman utama")
-    active_key = sign_key()
-    
-    if not active_key:
-        return render_template("forbidden.html"), 403
 
-    # >>> PILIHAN 1: Inject session + cookie langsung di view
-    # set_session(active_key)
-    # resp = make_response(render_template("index.html"))
-    # return set_cookie(resp, active_key)
+    # ambil sign key terbaru
+    latest_key = sign_key()
 
-    # >>> PILIHAN 2: Tidak inject, biarkan middleware yang urus
-    return render_template("index.html", latest_key = active_key)
+    # ambil cookie dari request
+    cookie_key = request.cookies.get("COOKIE_MK_AUTH")
+
+    # ambil session dari Redis berdasarkan cookie_key
+    session_data = get_session(cookie_key) if cookie_key else None
+    session_key = session_data["active_key"] if session_data else None
+
+    return render_template(
+        "index.html",
+        latest_key=latest_key,
+        session_key=session_key,
+        cookie_key=cookie_key,
+    )
 
 @main_bp.route("/test_keypool")
 def secure():
