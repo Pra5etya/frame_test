@@ -89,4 +89,13 @@ py encrypt_env.py stag || py encrypt_env.py pro
 
 
 
-# server-side sessions + Cookies
+# server-side sessions + Cookies (using redis)
+
+
+```bash
+<!-- Install redis -->
+sudo apt install redis-server -y
+
+<!-- Check redis server -->
+redis-cli ping
+```
